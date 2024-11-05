@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        text-align: center;
+      }
+      .logo {
+        width: 150px;
+        margin-bottom: 20px;
+      }
+      h2 {
+        color: #1C4587;
+      }
+      .quiz-container {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .question {
+        text-align: left;
+        margin-bottom: 20px;
+      }
+      .option {
+        margin-left: 20px;
+      }
+      .submit-btn {
+        background-color: #1C4587;
+        color: #FFFFFF;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 15px;
+      }
+      .feedback {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #FAE8B0; /* Tom de amarelo mais suave */
+        border-radius: 5px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Logo -->
+    <img src="https://i.scdn.co/image/ab6765630000ba8a71d5a4bcd1ca8b91fc7f9c57" alt="Universo Ágil Logo" class="logo">
+    
+    <!-- Título e introdução -->
+    <h2>Quiz Universo Ágil - Hub de Agilidade</h2>
+    <p>Responda às perguntas abaixo para testar seus conhecimentos.</p>
+
+    <div class="quiz-container" id="quiz-container"></div>
+    <input type="email" id="email" placeholder="Seu email" required style="padding: 8px; width: 100%; max-width: 300px; margin-top: 15px;">
+    <button class="submit-btn" onclick="submitQuiz()">Enviar Respostas</button>
+
+    <div id="feedback"></div>
+
+    <script>
+      // Carrega perguntas ao abrir a página
+      function loadQuiz() {
+        google.script.run.withSuccessHandler(renderQuestions).getRandomQuestions();
+      }
+
+      function renderQuestions(perguntas) {
+        var container = document.getElementById('quiz-container');
+        container.innerHTML = ''; // Limpa conteúdo anterior
+        perguntas.forEach(function(pergunta, index) {
+          var questionHTML = '<div class="question"><b>' + pergunta.pergunta + '</b><br>';
+          pergunta.opcoes.forEach(function(opcao) {
+            questionHTML += '<div class="option"><label><input type="radio" name="q' + index + '" value="' + opcao + '">' + opcao + '</label></div>';
+          });
+          questionHTML += '</div>';
+          container.innerHTML += questionHTML;
+        });
+        container.dataset.questions = JSON.stringify(perguntas); // Armazena perguntas para envio posterior
+      }
+
+      function submitQuiz() {
+        var perguntas = JSON.parse(document.getElementById('quiz-container').dataset.questions);
+        var email = document.getElementById('email').value;
+        if (!email) {
+          alert("Por favor, insira seu email.");
+          return;
+        }
+
+        var respostas = perguntas.map(function(pergunta, index) {
+          var respostaDada = document.querySelector('input[name="q' + index + '"]:checked');
+          return {
+            pergunta: pergunta.pergunta,
+            respostaDada: respostaDada ? respostaDada.value : "",
+            correta: pergunta.correta,
+            explicacao: pergunta.explicacao
+          };
+        });
+
+        google.script.run.withSuccessHandler(displayFeedback).submitAnswers(respostas, email);
+      }
+
+      function displayFeedback(feedback) {
+        var feedbackHTML = '<div class="feedback"><h3>Feedback:</h3>';
+        feedback.forEach(function(item) {
+          feedbackHTML += '<p><b>Pergunta:</b> ' + item.pergunta + '<br>';
+          feedbackHTML += '<b>Sua Resposta:</b> ' + item.respostaDada + '<br>';
+          feedbackHTML += '<b>Correto:</b> ' + (item.correto ? "Sim" : "Não") + '<br>';
+          if (!item.correto) {
+            feedbackHTML += '<b>Resposta Correta:</b> ' + item.correta + '<br>';
+            feedbackHTML += '<b>Explicação:</b> ' + item.explicacao + '<br>';
+          }
+          feedbackHTML += '</p>';
+        });
+        feedbackHTML += '</div>';
+        document.getElementById('feedback').innerHTML = feedbackHTML;
+      }
+
+      loadQuiz(); // Inicia o quiz ao carregar a página
+    </script>
+  </body>
+</html>
+
