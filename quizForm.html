@@ -90,24 +90,26 @@
         var respostas = perguntas.map(function(pergunta, index) {
           var respostaDada = document.querySelector('input[name="q' + index + '"]:checked');
           return {
+            linha: pergunta.linha, // Inclui o número da linha original
             pergunta: pergunta.pergunta,
             respostaDada: respostaDada ? respostaDada.value : "",
-            correta: pergunta.correta,
-            explicacao: pergunta.explicacao
+            assunto: pergunta.assunto,
+            // Não precisamos mais de 'correta' e 'explicacao' aqui
           };
         });
 
         google.script.run.withSuccessHandler(displayFeedback).submitAnswers(respostas, email);
       }
 
+
       function displayFeedback(feedback) {
         var feedbackHTML = '<div class="feedback"><h3>Feedback:</h3>';
         feedback.forEach(function(item) {
           feedbackHTML += '<p><b>Pergunta:</b> ' + item.pergunta + '<br>';
           feedbackHTML += '<b>Sua Resposta:</b> ' + item.respostaDada + '<br>';
-          feedbackHTML += '<b>Correto:</b> ' + (item.correto ? "Sim" : "Não") + '<br>';
+          feedbackHTML += '<b>Correto:</b> ' + (item.correta ? "Sim" : "Não") + '<br>';
           if (!item.correto) {
-            feedbackHTML += '<b>Resposta Correta:</b> ' + item.correta + '<br>';
+            feedbackHTML += '<b>Resposta Correta:</b> ' + item.respostaCorreta + '<br>';
             feedbackHTML += '<b>Explicação:</b> ' + item.explicacao + '<br>';
           }
           feedbackHTML += '</p>';
@@ -120,4 +122,6 @@
     </script>
   </body>
 </html>
+
+
 
