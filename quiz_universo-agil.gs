@@ -1,5 +1,5 @@
 // Links e IDs das planilhas e pastas
-var PLANILHA_QUIZ_ID = "1KalJM6MPSCcMxFOnFd8CSX5Kgyr9Jinw3ZQzg_HhlGM"; // ID da planilha de perguntas
+var PLANILHA_QUIZ_ID = "1KalJM6MPSCcMxFOnFd8CSX5Kgyr9Jinw3ZQzg_HhlGM"; // ID da planilha de perguntas 
 var PLANILHA_RESPOSTAS_ID = "1Zdo0kEcb_NMnuOfjcS8v9ftfUZfRFvWI_sDeNyaUtks"; // ID da planilha de respostas
 
 // Função para renderizar a interface HTML
@@ -32,6 +32,7 @@ function getRandomQuestions() {
       var explicacao = sheet.getRange(linhaAleatoria, 7).getValue(); // Coluna G
 
       perguntas.push({
+        linha: linhaAleatoria, // Adiciona o número da linha original
         assunto: assunto,
         pergunta: pergunta,
         opcoes: opcoes,
@@ -43,43 +44,51 @@ function getRandomQuestions() {
   return perguntas;
 }
 
+
 // Função para salvar respostas e retornar feedback
 function submitAnswers(respostas, email) {
-  var sheet = SpreadsheetApp.openById(PLANILHA_RESPOSTAS_ID).getActiveSheet();
+  var sheetRespostas = SpreadsheetApp.openById(PLANILHA_RESPOSTAS_ID).getActiveSheet();
+  var sheetPerguntas = SpreadsheetApp.openById(PLANILHA_QUIZ_ID).getSheetByName("Quiz");
   var data = new Date();
   var feedback = [];
 
   respostas.forEach(function(resposta) {
-    var correto = resposta.correta === resposta.respostaDada;
+    var linhaPergunta = resposta.linha; // Usa o número da linha original
+    var respostaCorreta = sheetPerguntas.getRange(linhaPergunta, 6).getValue().toString().trim(); // Coluna F - Resposta Correta
+    var explicacao = sheetPerguntas.getRange(linhaPergunta, 7).getValue(); // Coluna G - Explicação
+    var correto = respostaCorreta === resposta.respostaDada;
 
     // Adiciona ao feedback para retorno em tempo real
     feedback.push({
       pergunta: resposta.pergunta,
       respostaDada: resposta.respostaDada,
       correta: correto,
-      respostaCorreta: resposta.correta,
-      explicacao: resposta.explicacao
+      respostaCorreta: respostaCorreta,
+      explicacao: explicacao
     });
 
-    // Registra a resposta na planilha
-    sheet.appendRow([
+    // Registra a resposta na planilha de respostas
+    sheetRespostas.appendRow([
       email,
       resposta.pergunta,
       resposta.respostaDada,
-      resposta.assunto, // Assunto enviado do HTML diretamente
+      resposta.assunto,
       correto ? "Correto" : "Errado",
       Utilities.formatDate(data, Session.getScriptTimeZone(), "MM/dd/yyyy HH:mm:ss")
     ]);
   });
 
-  // Chama a função de envio de email após processar as respostas
+  // Envia o feedback por email
   enviarEmailFeedback(email, feedback);
 
   return feedback; // Retorna o feedback para exibir em tempo real
 }
 
+
+
+
+
 // Função para enviar o feedback por email
-// Função para enviar email com feedback formatado em HTML
 function enviarEmailFeedback(email, respostas) {
   var feedbackHTML = `
     <div style="font-family: Arial, sans-serif; color: #333;">
@@ -92,12 +101,12 @@ function enviarEmailFeedback(email, respostas) {
       <div style="margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
         <p><strong>Pergunta:</strong> ${resposta.pergunta}</p>
         <p><strong>Sua Resposta:</strong> ${resposta.respostaDada}</p>
-        <p><strong>Correto:</strong> ${resposta.correto ? "Sim" : "Não"}</p>
+        <p><strong>Correto:</strong> ${resposta.correta ? "Sim" : "Não"}</p>
     `;
 
-    if (!resposta.correto) {
+    if (!resposta.correta) {
       feedbackHTML += `
-        <p><strong>Resposta Correta:</strong> ${resposta.correta}</p>
+        <p><strong>Resposta Correta:</strong> ${resposta.respostaCorreta}</p>
         <p><strong>Explicação:</strong> ${resposta.explicacao}</p>
       `;
     }
